@@ -1,0 +1,15 @@
+services:
+  db:
+    image: postgres:15
+    container_name: valorant_stats_db
+    environment:
+      - POSTGRES_USER=coach_admin
+      - POSTGRES_PASSWORD=valopro_password
+      - POSTGRES_DB=scrim_tracker_db
+    ports:
+      - "5432:5432"
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+
+volumes:
+  postgres_data:
