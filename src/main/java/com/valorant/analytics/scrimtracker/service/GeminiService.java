@@ -22,41 +22,91 @@ public class GeminiService {
     private final RestTemplate restTemplate = new RestTemplate();
     private final ObjectMapper objectMapper = new ObjectMapper();
 
-    public Match analyzeImages(MultipartFile scoreboard, MultipartFile timeline) throws Exception {
+    public Match analyzeImages(MultipartFile scoreboard, MultipartFile performance, MultipartFile timeline) throws Exception {
         String url = "https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:generateContent?key=" + apiKey;
 
-        // 1. Convertir los archivos reales a Base64 para Google
+        // 1. Convertir las TRES imágenes a Base64
         String scoreboardB64 = Base64.getEncoder().encodeToString(scoreboard.getBytes());
+        String performanceB64 = Base64.getEncoder().encodeToString(performance.getBytes());
         String timelineB64 = Base64.getEncoder().encodeToString(timeline.getBytes());
 
-        // 2. Nuestro Prompt Maestro estructurado
-        String prompt = "Analiza estas dos imágenes de una scrim de VALORANT (Scoreboard y summary). El formato puede ser ALL ROUNDS (24 rondas que un equipo puede tener mas de 13 aunque al punto 13 se gane). Extrae las estadísticas de los jugadores del equipo (fondo verde)y el rendimiento del equipo. Devuelve ÚNICAMENTE un objeto JSON con este formato exacto: {\"mapName\": \"NombreMapa\", \"roundsWonAtk\": 0, \"roundsWonDef\": 0, \"wonPistolAtk\": true, \"wonPistolDef\": false, \"totalRounds\": 24, \"playerStats\": [{\"playerName\": \"Nombre\", \"agent\": \"Agente\", \"acs\": 0, \"kills\": 0, \"deaths\": 0, \"assists\": 0, \"econ\": 0, \"firstBloods\": 0, \"plants\": 0, \"defuses\": 0}]}. No incluyas comillas invertidas ni texto de código markdown, solo el JSON puro.";
+        // 2. El NUEVO Prompt Maestro
+        String prompt = """
+        Eres un analista de datos experto en eSports, específicamente en VALORANT.
+        Tu tarea es extraer métricas exactas de tres capturas de pantalla de una partida y devolverlas en un formato estructurado.
 
-        // 3. Armar el "paquete" (Payload) para Gemini
-        Map<String, Object> requestBody = createGeminiPayload(prompt, scoreboardB64, timelineB64);
+        INSTRUCCIONES POR IMAGEN:
+        1. Scoreboard: La imagen muestra la tabla agrupada por equipos. Extrae SÓLO las estadísticas individuales de los primeros 5 jugadores de la lista (el equipo superior). Ignora a los 5 jugadores del fondo. Captura el Nombre, Agente, ACS, KDA (Kills, Deaths, Assists), Econ, First Bloods, Plants y Defuses.
+        2. Performance (Match Highlights): Localiza la tabla de la derecha. Extrae las estadísticas globales del equipo divididas por ATK (Ataque) y DEF (Defensa). Busca los valores exactos para: Rondas ganadas, First bloods, First blood wins, Elimination wins, Spikes deployed, Post-spike wins, Defusals, Def team eliminated y Detonations.
+        3. Timeline: Analiza la línea de tiempo de rondas. Determina si el equipo ganó la Ronda 1 (Pistolas Ataque o Defensa dependiendo del lado inicial) y la ronda inmediatamente posterior al cambio de lado (usualmente la Ronda 13, marcada después del ícono de flechas circulares).
+
+        REGLAS DE SALIDA (CRÍTICO):
+        - Tu única respuesta debe ser un objeto JSON puro.
+        - NO incluyas formato markdown (como ```json).
+        - NO incluyas saludos ni explicaciones.
+        - Utiliza EXACTAMENTE esta estructura y nombres de llaves:
+
+        {
+          "mapName": "NombreDelMapa",
+          "totalRounds": 0,
+          "wonPistolAtk": true,
+          "wonPistolDef": false,
+          "roundsWonAtk": 0,
+          "roundsWonDef": 0,
+          "firstBloodsAtk": 0,
+          "firstBloodsDef": 0,
+          "firstBloodWinsAtk": 0,
+          "firstBloodWinsDef": 0,
+          "eliminationWinsAtk": 0,
+          "eliminationWinsDef": 0,
+          "spikesDeployedAtk": 0,
+          "spikesDeployedDef": 0,
+          "postSpikeWinsAtk": 0,
+          "postSpikeWinsDef": 0,
+          "defusalsAtk": 0,
+          "defusalsDef": 0,
+          "defTeamEliminatedAtk": 0,
+          "defTeamEliminatedDef": 0,
+          "detonationsAtk": 0,
+          "detonationsDef": 0,
+          "playerStats": [
+            {
+              "playerName": "Nombre",
+              "agent": "Agente",
+              "acs": 0,
+              "kills": 0,
+              "deaths": 0,
+              "assists": 0,
+              "econ": 0,
+              "firstBloods": 0,
+              "plants": 0,
+              "defuses": 0
+            }
+          ]
+        }
+        """;
+        // 3. Armar el paquete
+        Map<String, Object> requestBody = createGeminiPayload(prompt, scoreboardB64, performanceB64, timelineB64);
 
         HttpHeaders headers = new HttpHeaders();
         headers.setContentType(MediaType.APPLICATION_JSON);
         HttpEntity<Map<String, Object>> request = new HttpEntity<>(requestBody, headers);
 
-        // 4. Hacer la llamada HTTP a Google
         String responseRaw = restTemplate.postForObject(url, request, String.class);
 
-        // 5. Extraer el texto de la respuesta y limpiarlo
         JsonNode root = objectMapper.readTree(responseRaw);
         String textResponse = root.path("candidates").get(0).path("content").path("parts").get(0).path("text").asText();
         String cleanJson = textResponse.replace("```json", "").replace("```", "").trim();
 
-        // 6. Convertir el JSON de la IA en nuestra clase Java
         return objectMapper.readValue(cleanJson, Match.class);
     }
 
-    // Método auxiliar para estructurar el JSON que pide Google
-    private Map<String, Object> createGeminiPayload(String prompt, String img1, String img2) {
+private Map<String, Object> createGeminiPayload(String prompt, String img1, String img2, String img3) {
         List<Map<String, Object>> parts = Arrays.asList(
                 Map.of("text", prompt),
                 Map.of("inline_data", Map.of("mime_type", "image/jpeg", "data", img1)),
-                Map.of("inline_data", Map.of("mime_type", "image/jpeg", "data", img2))
+                Map.of("inline_data", Map.of("mime_type", "image/jpeg", "data", img2)),
+                Map.of("inline_data", Map.of("mime_type", "image/jpeg", "data", img3))
         );
         Map<String, Object> content = Map.of("parts", parts);
         return Map.of("contents", List.of(content));

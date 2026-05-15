@@ -35,17 +35,19 @@ public class MatchController {
         return ResponseEntity.ok(matchService.getAllMatches());
     }
 
-    // Nuevo Endpoint para la IA: Recibe archivos en lugar de texto
-    @PostMapping("/analyze")
+@PostMapping("/analyze")
     public ResponseEntity<Match> analyzeMatchImages(
             @RequestParam("scoreboard") MultipartFile scoreboard,
+            @RequestParam("performance") MultipartFile performance,
             @RequestParam("timeline") MultipartFile timeline) {
         try {
-            // Mandamos las fotos a la IA
-            Match analyzedMatch = geminiService.analyzeImages(scoreboard, timeline);
+            // Mandamos las tres fotos a la IA
+            Match analyzedMatch = geminiService.analyzeImages(scoreboard, performance, timeline);
+
+            Match savedMatch = matchService.saveMatch(analyzedMatch);
             
-            // Devolvemos la tabla de datos estructurada
-            return ResponseEntity.ok(analyzedMatch);
+            // Devolvemos el objeto ya guardado
+            return ResponseEntity.ok(savedMatch);
         } catch (Exception e) {
             e.printStackTrace();
             return ResponseEntity.internalServerError().build();

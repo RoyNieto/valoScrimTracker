@@ -1,0 +1,26 @@
+$kind: http-request
+name: http://localhost:8080/api/matches/analyze
+url: http://localhost:8080/api/matches/analyze
+method: POST
+body:
+  type: formdata
+  content:
+    - type: file
+      key: scoreboard
+      src:
+        - /C:/Users/nieto/OneDrive/Desktop/capturas matches/1/Screenshot 2026-05-15 035707.png
+      description: ""
+      disabled: false
+    - type: file
+      key: performance
+      src:
+        - /C:/Users/nieto/OneDrive/Desktop/capturas matches/1/Screenshot 2026-05-15 035812.png
+      description: ""
+      disabled: false
+    - type: file
+      key: timeline
+      src:
+        - /C:/Users/nieto/OneDrive/Pictures/Screenshots/Screenshot 2026-05-15 024317.png
+      description: ""
+      disabled: false
+order: 1778843077181

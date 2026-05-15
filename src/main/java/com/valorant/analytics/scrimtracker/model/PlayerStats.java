@@ -5,13 +5,19 @@ import lombok.Data;
 
 @Entity
 @Table(name = "player_stats")
-@Data // LOMBOK AUTO GET & SET
+@Data
 public class PlayerStats {
 
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;
 
+    // 1. La NUEVA relación con el catálogo de jugadores
+    @ManyToOne(cascade = CascadeType.PERSIST)
+    @JoinColumn(name = "player_id")
+    private Player player;
+
+    @Transient
     private String playerName;
     private String agent;
     
