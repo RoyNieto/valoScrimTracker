@@ -1,0 +1,27 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <title>Test IA - ScrimTracker</title>
+    <style>
+        body { font-family: Arial, sans-serif; padding: 40px; background-color: #121212; color: white; }
+        .box { background-color: #1e1e1e; padding: 20px; border-radius: 8px; max-width: 400px; }
+        button { background-color: #ff4655; color: white; border: none; padding: 10px 20px; cursor: pointer; margin-top: 15px; font-weight: bold;}
+    </style>
+</head>
+<body>
+    <div class="box">
+        <h2>Subir Scrim a Gemini</h2>
+        <form action="http://localhost:8080/api/matches/analyze" method="POST" enctype="multipart/form-data">
+            
+            <label>1. Imagen del Scoreboard:</label><br>
+            <input type="file" name="scoreboard" accept="image/*" required><br><br>
+            
+            <label>2. Imagen del Timeline:</label><br>
+            <input type="file" name="timeline" accept="image/*" required><br><br>
+            
+            <button type="submit">Analizar con IA</button>
+        </form>
+    </div>
+</body>
+</html>

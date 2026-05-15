@@ -27,4 +27,12 @@ public class Match {
     @OneToMany(cascade = CascadeType.ALL)
     @JoinColumn(name = "match_id")
     private List<PlayerStats> playerStats;
+    // ... tus otros campos (totalRounds, playerStats, etc.)
+
+    @PrePersist
+    protected void onCreate() {
+        if (this.date == null) {
+            this.date = LocalDateTime.now();
+        }
+    }
 }
